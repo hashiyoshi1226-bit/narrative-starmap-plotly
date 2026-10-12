@@ -8,9 +8,9 @@ import zipfile
 import io
 import os
 
-st.set_page_config(page_title="Narrative Star Map Dashboard (Plotly)", layout="wide")
+st.set_page_config(page_title="Narrative Star Map Dashboard (2D Plotly)", layout="wide")
 
-st.title("✨ 食のナラティブ・インタラクティブ星図ビュワー (Plotly版)")
+st.title("✨ 食のナラティブ・インタラクティブ星図ビュワー (2D版)")
 st.sidebar.header("データと表示設定")
 
 uploaded_fixed = st.sidebar.file_uploader("ナラティブ/座標データ (Excel または CSV)", type=["xlsx", "xls", "csv"])
@@ -119,7 +119,7 @@ if uploaded_fixed and uploaded_demo:
             summary_text = summary_dict.get(selected_group, "このグループの概況文ファイル（CSV）がアップロードされていないか、該当グループのデータがありません。")
             st.info(f"**【{selected_group} の特徴・概況】**\n\n{summary_text}")
         
-        # --- Plotlyによるインタラクティブ図の構築 ---
+        # --- Plotlyによる 2D インタラクティブ図の構築 ---
         fig = go.Figure()
         
         # 1. 背景の星（全ナラティブ）
@@ -131,7 +131,8 @@ if uploaded_fixed and uploaded_demo:
             marker=dict(size=6, color='#FFFFFF', opacity=0.4),
             text=hover_texts,
             hoverinfo='text',
-            name='全ナラティブ'
+            name='全ナラティブ',
+            showlegend=False
         ))
         
         # 2. グループごとのプロット・線描画
@@ -156,21 +157,20 @@ if uploaded_fixed and uploaded_demo:
                 
                 cx, cy = np.mean(my_x), np.mean(my_y)
                 
-                # 参加者中心（ひし形）
+                # 参加者アイコン
                 if show_solid or show_dotted:
                     fig.add_trace(go.Scatter(
                         x=[cx], y=[cy],
                         mode='markers',
-                        marker=dict(size=14, color=color, symbol='diamond', line=dict(color='white', width=1)),
+                        marker=dict(size=14, color=color, symbol='diamond', line=dict(color='white', width=1.5)),
                         name=f"参加者: {p_id}",
                         hoverinfo='text',
                         hovertext=f"参加者 ID: {p_id} (グループ: {selected_group})"
                     ))
                 
-                # 実線（自分の星座）
+                # 実線（元の細さ・スタイルを維持）
                 if show_solid:
                     for x, y, c_no in zip(my_x, my_y, my_cards):
-                        # 線
                         fig.add_trace(go.Scatter(
                             x=[cx, x], y=[cy, y],
                             mode='lines',
@@ -179,7 +179,6 @@ if uploaded_fixed and uploaded_demo:
                             showlegend=False,
                             hoverinfo='none'
                         ))
-                        # 選択したカード
                         c_title = coords_dict.get(c_no, {}).get('見出し', '')
                         fig.add_trace(go.Scatter(
                             x=[x], y=[y],
@@ -190,7 +189,7 @@ if uploaded_fixed and uploaded_demo:
                             hovertext=f"[{p_id}の選択カード] No.{c_no} {c_title}"
                         ))
                 
-                # 点線（他者への関心）
+                # 点線（関心：元の細さ・スタイルを維持）
                 if show_dotted:
                     for c_no in interest_cards:
                         if c_no in coords_dict:
@@ -200,17 +199,9 @@ if uploaded_fixed and uploaded_demo:
                                 x=[cx, ix], y=[cy, iy],
                                 mode='lines',
                                 line=dict(color=color, width=2, dash='dot'),
-                                opacity=0.6,
+                                opacity=0.75,
                                 showlegend=False,
                                 hoverinfo='none'
-                            ))
-                            fig.add_trace(go.Scatter(
-                                x=[ix], y=[iy],
-                                mode='markers',
-                                marker=dict(size=12, color='rgba(0,0,0,0)', line=dict(color=color, width=2)),
-                                showlegend=False,
-                                hoverinfo='text',
-                                hovertext=f"[{p_id}の関心カード] No.{c_no} {c_title}"
                             ))
 
             # ラベル表示
@@ -234,27 +225,21 @@ if uploaded_fixed and uploaded_demo:
             
             # ハート表示
             if show_hearts:
-                h_x, h_y, h_text = [], [], []
                 for c_no, voters in interest_map.items():
                     if c_no in coords_dict:
                         c_info = coords_dict[c_no]
-                        h_x.append(c_info['X'] - 0.08)
-                        h_y.append(c_info['Y'] + 0.06)
                         voters_str = "<br>".join(voters)
-                        h_text.append(f"♥ {len(voters)}<br><b>関心メンバー:</b><br>{voters_str}")
-                
-                fig.add_trace(go.Scatter(
-                    x=h_x, y=h_y,
-                    mode='text',
-                    text=[f"♥ {len(interest_map[c])}" for c in interest_map if c in coords_dict],
-                    textfont=dict(size=12, color='#FF69B4'),
-                    hoverinfo='text',
-                    hovertext=[f"<b>No.{c} {coords_dict[c]['見出し']}</b><br>関心寄せた人:<br>" + "<br>".join(interest_map[c]) for c in interest_map if c in coords_dict],
-                    name='関心(♥)',
-                    showlegend=False
-                ))
+                        fig.add_trace(go.Scatter(
+                            x=[c_info['X'] - 0.08], y=[c_info['Y'] + 0.06],
+                            mode='text',
+                            text=[f"♥ {len(voters)}"],
+                            textfont=dict(size=12, color='#FF69B4', family='Arial Black'),
+                            hoverinfo='text',
+                            hovertext=[f"<b>No.{c_no} {c_info['見出し']}</b><br>関心寄せた人:<br>{voters_str}"],
+                            showlegend=False
+                        ))
 
-        # レイアウト調整（ダークテーマ・軸非表示）
+        # --- レイアウト調整（凡例の文字色を白色に修正） ---
         fig.update_layout(
             title=dict(text=f'Interactive Star Map: {selected_group}', font=dict(color='white', size=18)),
             paper_bgcolor='#0E1117',
@@ -263,7 +248,8 @@ if uploaded_fixed and uploaded_demo:
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             hovermode='closest',
             height=700,
-            margin=dict(l=20, r=20, t=50, b=20)
+            margin=dict(l=20, r=20, t=50, b=20),
+            legend=dict(font=dict(color='white')) # ★参加者名（凡例）の文字色を白に修正
         )
         
         st.plotly_chart(fig, use_container_width=True)
