@@ -136,7 +136,7 @@ if uploaded_fixed and uploaded_demo:
             showlegend=False
         ))
         
-        # 2. グループごとのプロット・線描画（3D空間：最適化された超薄型レイヤー）
+        # 2. グループごとのプロット・線描画（3D空間）
         if selected_group != "（グループを選択しない：星図のみ）":
             group_data = df_demo[df_demo[group_col] == selected_group]
             colors = ['#FF0D0D', '#1E90FF', '#FFD700', '#00FF66', '#FF1493', '#00FFFF']
@@ -158,60 +158,67 @@ if uploaded_fixed and uploaded_demo:
                 
                 # 中心点（ひし形）
                 cx, cy = np.mean(my_x), np.mean(my_y)
-                
-                # ★改善：選択したカードの数（枚数）に応じてZ高さを小さく制御（1枚ならZ=0に近づけ、複数でも全体の高さを最小化）
                 num_cards = len(my_cards)
-                if num_cards == 1:
-                    z_offset = 0.002  # 1枚だけならほぼ平面
-                else:
-                    # 選択枚数や参加者インデックスに基づき、全体が0.01〜0.03の非常に薄いレイヤーに収まるよう調整
-                    z_offset = 0.005 + (num_cards * 0.003) + ((idx % 3) * 0.002)
+                z_offset = 0.002 if num_cards == 1 else 0.005 + (num_cards * 0.003) + ((idx % 3) * 0.002)
                 
                 # 参加者アイコン（中心点・ひし形）
                 if show_solid or show_dotted:
                     fig.add_trace(go.Scatter3d(
                         x=[cx], y=[cy], z=[z_offset],
                         mode='markers',
-                        marker=dict(size=7, color=color, symbol='diamond', line=dict(color='white', width=1)),
+                        marker=dict(size=8, color=color, symbol='diamond', line=dict(color='white', width=1.5)),
                         name=f"参加者: {p_id}",
                         hoverinfo='text',
                         hovertext=f"参加者 ID: {p_id} (グループ: {selected_group})"
                     ))
                 
-                # 実線（中心から選んだ星へ放射状に伸ばすハブ＆スポーク）
+                # ★実線（自分の星座）：太さを「6」に大幅アップして存在感を強調
                 if show_solid:
                     for x, y, c_no in zip(my_x, my_y, my_cards):
-                        # 線
                         fig.add_trace(go.Scatter3d(
                             x=[cx, x], y=[cy, y], z=[z_offset, 0],
                             mode='lines',
-                            line=dict(color=color, width=3.5),
-                            opacity=0.85,
+                            line=dict(color=color, width=6.0),
+                            opacity=0.9,
                             showlegend=False,
                             hoverinfo='none'
                         ))
-                        # 選択したカード（丸）
                         c_title = coords_dict.get(c_no, {}).get('見出し', '')
                         fig.add_trace(go.Scatter3d(
                             x=[x], y=[y], z=[0],
                             mode='markers',
-                            marker=dict(size=5, color=color, symbol='circle', line=dict(color='white', width=1)),
+                            marker=dict(size=6, color=color, symbol='circle', line=dict(color='white', width=1)),
                             showlegend=False,
                             hoverinfo='text',
                             hovertext=f"[{p_id}の選択カード] No.{c_no} {c_title}"
                         ))
                 
-                # 点線（他者への関心）
+                # ★点線（他者への関心）：太さを「7」にさらに太くし、さらにダッシュ間隔を明確化するため等間隔のマーカー（ドット）を重ねることで遠くからでも一目で識別できるように改良
                 if show_dotted:
                     for c_no in interest_cards:
                         if c_no in coords_dict:
                             ix, iy = coords_dict[c_no]['X'], coords_dict[c_no]['Y']
                             c_title = coords_dict[c_no]['見出し']
+                            
+                            # メインの太い点線
                             fig.add_trace(go.Scatter3d(
                                 x=[cx, ix], y=[cy, iy], z=[z_offset, 0],
                                 mode='lines',
-                                line=dict(color=color, width=4.5, dash='dot'),
-                                opacity=0.85,
+                                line=dict(color=color, width=7.0, dash='dot'),
+                                opacity=0.95,
+                                showlegend=False,
+                                hoverinfo='none'
+                            ))
+                            
+                            # 視点が遠くても点線であることが一目でわかるよう、線上に等間隔のドットを配置
+                            num_dots = 6
+                            dot_xs = np.linspace(cx, ix, num_dots)
+                            dot_ys = np.linspace(cy, iy, num_dots)
+                            dot_zs = np.linspace(z_offset, 0, num_dots)
+                            fig.add_trace(go.Scatter3d(
+                                x=dot_xs[1:-1], y=dot_ys[1:-1], z=dot_zs[1:-1],
+                                mode='markers',
+                                marker=dict(size=4.5, color=color, symbol='circle'),
                                 showlegend=False,
                                 hoverinfo='none'
                             ))
@@ -252,7 +259,7 @@ if uploaded_fixed and uploaded_demo:
                             showlegend=False
                         ))
 
-        # --- 3Dレイアウトの調整（高さを抑えたミニマムなカメラ・シーン設定） ---
+        # --- 3Dレイアウトの調整 ---
         fig.update_layout(
             title=dict(text=f'Interactive 3D Star Map: {selected_group}', font=dict(color='white', size=18)),
             paper_bgcolor='#0E1117',
@@ -263,7 +270,7 @@ if uploaded_fixed and uploaded_demo:
                 zaxis=dict(showbackground=False, showgrid=False, zeroline=False, showticklabels=False, title='', range=[-0.05, 0.1]),
                 bgcolor='#0E1117',
                 camera=dict(
-                    eye=dict(x=0, y=-0.1, z=2.2) # 少し上からの見下ろしアングルをデフォルトに設定
+                    eye=dict(x=0, y=-0.1, z=2.2)
                 )
             ),
             hovermode='closest',
