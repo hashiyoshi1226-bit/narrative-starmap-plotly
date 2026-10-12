@@ -172,13 +172,13 @@ if uploaded_fixed and uploaded_demo:
                         hovertext=f"参加者 ID: {p_id} (グループ: {selected_group})"
                     ))
                 
-                # ★実線（自分の星座）：太さを「6」に大幅アップして存在感を強調
+                # ★実線（自分の星座）：太さを「8」に引き上げ
                 if show_solid:
                     for x, y, c_no in zip(my_x, my_y, my_cards):
                         fig.add_trace(go.Scatter3d(
                             x=[cx, x], y=[cy, y], z=[z_offset, 0],
                             mode='lines',
-                            line=dict(color=color, width=6.0),
+                            line=dict(color=color, width=8.0),
                             opacity=0.9,
                             showlegend=False,
                             hoverinfo='none'
@@ -193,32 +193,18 @@ if uploaded_fixed and uploaded_demo:
                             hovertext=f"[{p_id}の選択カード] No.{c_no} {c_title}"
                         ))
                 
-                # ★点線（他者への関心）：太さを「7」にさらに太くし、さらにダッシュ間隔を明確化するため等間隔のマーカー（ドット）を重ねることで遠くからでも一目で識別できるように改良
+                # ★点線（他者への関心）：余計な丸を取り除き、dash='dash' または 'dot' を活用しつつ太さを「9」に設定
                 if show_dotted:
                     for c_no in interest_cards:
                         if c_no in coords_dict:
                             ix, iy = coords_dict[c_no]['X'], coords_dict[c_no]['Y']
                             c_title = coords_dict[c_no]['見出し']
                             
-                            # メインの太い点線
                             fig.add_trace(go.Scatter3d(
                                 x=[cx, ix], y=[cy, iy], z=[z_offset, 0],
                                 mode='lines',
-                                line=dict(color=color, width=7.0, dash='dot'),
+                                line=dict(color=color, width=9.0, dash='dash'), # 太さ9、間隔の広い dash パターンを採用
                                 opacity=0.95,
-                                showlegend=False,
-                                hoverinfo='none'
-                            ))
-                            
-                            # 視点が遠くても点線であることが一目でわかるよう、線上に等間隔のドットを配置
-                            num_dots = 6
-                            dot_xs = np.linspace(cx, ix, num_dots)
-                            dot_ys = np.linspace(cy, iy, num_dots)
-                            dot_zs = np.linspace(z_offset, 0, num_dots)
-                            fig.add_trace(go.Scatter3d(
-                                x=dot_xs[1:-1], y=dot_ys[1:-1], z=dot_zs[1:-1],
-                                mode='markers',
-                                marker=dict(size=4.5, color=color, symbol='circle'),
                                 showlegend=False,
                                 hoverinfo='none'
                             ))
