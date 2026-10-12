@@ -136,7 +136,7 @@ if uploaded_fixed and uploaded_demo:
             showlegend=False
         ))
         
-        # 2. グループごとのプロット・線描画（3D空間：うっすらとした厚み）
+        # 2. グループごとのプロット・線描画（3D空間：最適化された超薄型レイヤー）
         if selected_group != "（グループを選択しない：星図のみ）":
             group_data = df_demo[df_demo[group_col] == selected_group]
             colors = ['#FF0D0D', '#1E90FF', '#FFD700', '#00FF66', '#FF1493', '#00FFFF']
@@ -158,8 +158,14 @@ if uploaded_fixed and uploaded_demo:
                 
                 # 中心点（ひし形）
                 cx, cy = np.mean(my_x), np.mean(my_y)
-                # ★高さを極めて小さくし、うっすらとした厚みに調整 (0.01刻み)
-                z_offset = (idx + 1) * 0.012 
+                
+                # ★改善：選択したカードの数（枚数）に応じてZ高さを小さく制御（1枚ならZ=0に近づけ、複数でも全体の高さを最小化）
+                num_cards = len(my_cards)
+                if num_cards == 1:
+                    z_offset = 0.002  # 1枚だけならほぼ平面
+                else:
+                    # 選択枚数や参加者インデックスに基づき、全体が0.01〜0.03の非常に薄いレイヤーに収まるよう調整
+                    z_offset = 0.005 + (num_cards * 0.003) + ((idx % 3) * 0.002)
                 
                 # 参加者アイコン（中心点・ひし形）
                 if show_solid or show_dotted:
@@ -195,7 +201,7 @@ if uploaded_fixed and uploaded_demo:
                             hovertext=f"[{p_id}の選択カード] No.{c_no} {c_title}"
                         ))
                 
-                # ★点線（他者への関心）：視点が遠くなっても見やすいよう、太さと不透明度を強化
+                # 点線（他者への関心）
                 if show_dotted:
                     for c_no in interest_cards:
                         if c_no in coords_dict:
@@ -204,8 +210,8 @@ if uploaded_fixed and uploaded_demo:
                             fig.add_trace(go.Scatter3d(
                                 x=[cx, ix], y=[cy, iy], z=[z_offset, 0],
                                 mode='lines',
-                                line=dict(color=color, width=4.5, dash='dot'), # 太さを4.5にアップ
-                                opacity=0.85, # 不透明度を上げてくっきり表示
+                                line=dict(color=color, width=4.5, dash='dot'),
+                                opacity=0.85,
                                 showlegend=False,
                                 hoverinfo='none'
                             ))
@@ -218,7 +224,7 @@ if uploaded_fixed and uploaded_demo:
                         c_info = coords_dict[c_no]
                         lbl_x.append(c_info['X'] + 0.03)
                         lbl_y.append(c_info['Y'] + 0.02)
-                        lbl_z.append(0.01)
+                        lbl_z.append(0.005)
                         lbl_text.append(f"<b>{int(c_no)}. {c_info['見出し']}</b>")
                 
                 fig.add_trace(go.Scatter3d(
@@ -237,7 +243,7 @@ if uploaded_fixed and uploaded_demo:
                         c_info = coords_dict[c_no]
                         voters_str = "<br>".join(voters)
                         fig.add_trace(go.Scatter3d(
-                            x=[c_info['X'] - 0.08], y=[c_info['Y'] + 0.06], z=[0.02],
+                            x=[c_info['X'] - 0.08], y=[c_info['Y'] + 0.06], z=[0.01],
                             mode='text',
                             text=[f"♥ {len(voters)}"],
                             textfont=dict(size=11, color='#FF69B4', family='Arial Black'),
@@ -246,7 +252,7 @@ if uploaded_fixed and uploaded_demo:
                             showlegend=False
                         ))
 
-        # --- 3Dレイアウトの調整 ---
+        # --- 3Dレイアウトの調整（高さを抑えたミニマムなカメラ・シーン設定） ---
         fig.update_layout(
             title=dict(text=f'Interactive 3D Star Map: {selected_group}', font=dict(color='white', size=18)),
             paper_bgcolor='#0E1117',
@@ -254,8 +260,11 @@ if uploaded_fixed and uploaded_demo:
             scene=dict(
                 xaxis=dict(showbackground=False, showgrid=False, zeroline=False, showticklabels=False, title=''),
                 yaxis=dict(showbackground=False, showgrid=False, zeroline=False, showticklabels=False, title=''),
-                zaxis=dict(showbackground=False, showgrid=False, zeroline=False, showticklabels=False, title=''),
-                bgcolor='#0E1117'
+                zaxis=dict(showbackground=False, showgrid=False, zeroline=False, showticklabels=False, title='', range=[-0.05, 0.1]),
+                bgcolor='#0E1117',
+                camera=dict(
+                    eye=dict(x=0, y=-0.1, z=2.2) # 少し上からの見下ろしアングルをデフォルトに設定
+                )
             ),
             hovermode='closest',
             height=750,
