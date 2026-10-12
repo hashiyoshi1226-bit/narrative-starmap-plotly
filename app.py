@@ -136,7 +136,7 @@ if uploaded_fixed and uploaded_demo:
             showlegend=False
         ))
         
-        # 2. グループごとのプロット・線描画（3D空間）
+        # 2. グループごとのプロット・線描画（3D空間：うっすらとした厚み）
         if selected_group != "（グループを選択しない：星図のみ）":
             group_data = df_demo[df_demo[group_col] == selected_group]
             colors = ['#FF0D0D', '#1E90FF', '#FFD700', '#00FF66', '#FF1493', '#00FFFF']
@@ -156,10 +156,10 @@ if uploaded_fixed and uploaded_demo:
                 my_y = [coords_dict[c]['Y'] for c in my_cards if c in coords_dict]
                 if not my_x: continue
                 
-                # 中心点（ひし形を配置する重心）
+                # 中心点（ひし形）
                 cx, cy = np.mean(my_x), np.mean(my_y)
-                # 3D空間で立体的に重なりを避けるための微小な高さ（Z軸）
-                z_offset = (idx + 1) * 0.05 
+                # ★高さを極めて小さくし、うっすらとした厚みに調整 (0.01刻み)
+                z_offset = (idx + 1) * 0.012 
                 
                 # 参加者アイコン（中心点・ひし形）
                 if show_solid or show_dotted:
@@ -179,7 +179,7 @@ if uploaded_fixed and uploaded_demo:
                         fig.add_trace(go.Scatter3d(
                             x=[cx, x], y=[cy, y], z=[z_offset, 0],
                             mode='lines',
-                            line=dict(color=color, width=4),
+                            line=dict(color=color, width=3.5),
                             opacity=0.85,
                             showlegend=False,
                             hoverinfo='none'
@@ -195,7 +195,7 @@ if uploaded_fixed and uploaded_demo:
                             hovertext=f"[{p_id}の選択カード] No.{c_no} {c_title}"
                         ))
                 
-                # 点線（他者への関心）
+                # ★点線（他者への関心）：視点が遠くなっても見やすいよう、太さと不透明度を強化
                 if show_dotted:
                     for c_no in interest_cards:
                         if c_no in coords_dict:
@@ -204,8 +204,8 @@ if uploaded_fixed and uploaded_demo:
                             fig.add_trace(go.Scatter3d(
                                 x=[cx, ix], y=[cy, iy], z=[z_offset, 0],
                                 mode='lines',
-                                line=dict(color=color, width=3, dash='dot'),
-                                opacity=0.6,
+                                line=dict(color=color, width=4.5, dash='dot'), # 太さを4.5にアップ
+                                opacity=0.85, # 不透明度を上げてくっきり表示
                                 showlegend=False,
                                 hoverinfo='none'
                             ))
@@ -218,7 +218,7 @@ if uploaded_fixed and uploaded_demo:
                         c_info = coords_dict[c_no]
                         lbl_x.append(c_info['X'] + 0.03)
                         lbl_y.append(c_info['Y'] + 0.02)
-                        lbl_z.append(0.02)
+                        lbl_z.append(0.01)
                         lbl_text.append(f"<b>{int(c_no)}. {c_info['見出し']}</b>")
                 
                 fig.add_trace(go.Scatter3d(
@@ -237,7 +237,7 @@ if uploaded_fixed and uploaded_demo:
                         c_info = coords_dict[c_no]
                         voters_str = "<br>".join(voters)
                         fig.add_trace(go.Scatter3d(
-                            x=[c_info['X'] - 0.08], y=[c_info['Y'] + 0.06], z=[0.04],
+                            x=[c_info['X'] - 0.08], y=[c_info['Y'] + 0.06], z=[0.02],
                             mode='text',
                             text=[f"♥ {len(voters)}"],
                             textfont=dict(size=11, color='#FF69B4', family='Arial Black'),
@@ -246,7 +246,7 @@ if uploaded_fixed and uploaded_demo:
                             showlegend=False
                         ))
 
-        # --- 3Dレイアウトの調整（凡例の文字色を白色に修正） ---
+        # --- 3Dレイアウトの調整 ---
         fig.update_layout(
             title=dict(text=f'Interactive 3D Star Map: {selected_group}', font=dict(color='white', size=18)),
             paper_bgcolor='#0E1117',
@@ -260,7 +260,7 @@ if uploaded_fixed and uploaded_demo:
             hovermode='closest',
             height=750,
             margin=dict(l=20, r=20, t=50, b=20),
-            legend=dict(font=dict(color='white')) # ★参加者名（凡例）の文字色を白に修正
+            legend=dict(font=dict(color='white'))
         )
         
         st.plotly_chart(fig, use_container_width=True)
