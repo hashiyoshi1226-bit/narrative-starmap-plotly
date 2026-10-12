@@ -155,7 +155,7 @@ if uploaded_fixed and uploaded_demo:
                 my_y = [coords_dict[c]['Y'] for c in my_cards if c in coords_dict]
                 if not my_x: continue
                 
-                # 重心（重心の位置に参加者アイコンを置くため）
+                # 重心（選択された星たちの平均座標。参加者アイコンをここに置くことで「三角形などの図形の中心」になります）
                 cx, cy = np.mean(my_x), np.mean(my_y)
                 
                 # 参加者アイコン（重心位置に配置）
@@ -169,22 +169,17 @@ if uploaded_fixed and uploaded_demo:
                         hovertext=f"参加者 ID: {p_id} (重心位置)<br>選択カード数: {len(my_cards)}"
                     ))
                 
-                # 実線（星同士を結ぶ星座線：3つ以上の場合は閉じた多角形または折れ線）
+                # 実線（星同士を結ぶ星座線：閉じない「折れ線」として描画）
                 if show_solid and len(my_x) > 0:
-                    # 星同士を順番に結ぶ（最後も最初と結んで閉じた図形にする場合はリストの末尾に最初を再追加）
-                    closed_x = my_x + [my_x[0]] if len(my_x) >= 3 else my_x
-                    closed_y = my_y + [my_y[0]] if len(my_y) >= 3 else my_y
-                    
-                    # 星座の線
                     fig.add_trace(go.Scatter(
-                        x=closed_x, y=closed_y,
+                        x=my_x, y=my_y,
                         mode='lines+markers',
                         line=dict(color=color, width=3),
                         marker=dict(size=10, color=color, symbol='circle', line=dict(color='white', width=1)),
                         opacity=0.85,
                         showlegend=False,
                         hoverinfo='text',
-                        hovertext=[f"[{p_id}の選択カード] No.{c} {coords_dict[c]['見出し']}" for c in (my_cards + [my_cards[0]] if len(my_cards) >= 3 else my_cards)]
+                        hovertext=[f"[{p_id}の選択カード] No.{c} {coords_dict[c]['見出し']}" for c in my_cards]
                     ))
                 
                 # 点線（他者への関心：重心から関心のある星へ向かう線）
@@ -245,7 +240,7 @@ if uploaded_fixed and uploaded_demo:
                             showlegend=False
                         ))
 
-        # レイアウト調整（ダークテーマ・凡例文字色を白に変更）
+        # レイアウト調整
         fig.update_layout(
             title=dict(text=f'Interactive Star Map: {selected_group}', font=dict(color='white', size=18)),
             paper_bgcolor='#0E1117',
@@ -255,7 +250,7 @@ if uploaded_fixed and uploaded_demo:
             hovermode='closest',
             height=700,
             margin=dict(l=20, r=20, t=50, b=20),
-            legend=dict(font=dict(color='white')) # ★右上の参加者リストの文字色を白に修正
+            legend=dict(font=dict(color='white'))
         )
         
         st.plotly_chart(fig, use_container_width=True)
