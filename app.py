@@ -110,7 +110,6 @@ if uploaded_fixed and uploaded_demo:
         group_options = ["（グループを選択しない：星図のみ）"] + sorted(df_demo[group_col].unique().tolist())
         selected_group = st.sidebar.selectbox("表示するグループ", group_options)
         
-        # ★追加: グループ選択時に、表示する参加者を絞り込めるようにする
         selected_participants = []
         if selected_group != "（グループを選択しない：星図のみ）":
             group_full_data = df_demo[df_demo[group_col] == selected_group]
@@ -148,10 +147,8 @@ if uploaded_fixed and uploaded_demo:
         
         # 2. グループごとのプロット・線描画
         if selected_group != "（グループを選択しない：星図のみ）" and len(selected_participants) > 0:
-            # 参加者を絞り込んだデータを取得
             group_data = group_full_data[group_full_data[part_col].isin(selected_participants)]
             
-            # ★追加: 参加者ごとの色を固定（絞り込んでも色が変わらないようにする）
             base_colors = ['#FF0D0D', '#1E90FF', '#FFD700', '#00FF66', '#FF1493', '#00FFFF']
             color_map = {p: base_colors[i % len(base_colors)] for i, p in enumerate(all_parts)}
             
@@ -184,7 +181,7 @@ if uploaded_fixed and uploaded_demo:
                         hovertext=f"参加者 ID: {p_id} (グループ: {selected_group})"
                     ))
                 
-                # 実線（放射状）
+                # 実線
                 if show_solid:
                     for x, y, c_no in zip(my_x, my_y, my_cards):
                         fig.add_trace(go.Scatter(
@@ -205,7 +202,7 @@ if uploaded_fixed and uploaded_demo:
                             hovertext=f"[{p_id}の選択カード] No.{c_no} {c_title}"
                         ))
                 
-                # 点線（関心）
+                # 点線
                 if show_dotted:
                     for c_no in interest_cards:
                         if c_no in coords_dict:
@@ -220,7 +217,7 @@ if uploaded_fixed and uploaded_demo:
                                 hoverinfo='none'
                             ))
 
-            # ★改善: ラベル表示（サイズ14、白太字、半透明の黒帯背景を追加して視認性アップ）
+            # ラベル表示（半透明背景付き）
             if show_labels:
                 for c_no in related_card_nos:
                     if c_no in coords_dict:
@@ -230,8 +227,8 @@ if uploaded_fixed and uploaded_demo:
                             y=c_info['Y'] + 0.03,
                             text=f"<b>{int(c_no)}. {c_info['見出し']}</b>",
                             showarrow=False,
-                            font=dict(size=14, color='#FFFFFF'), # 純白・サイズ14
-                            bgcolor="rgba(0, 0, 0, 0.6)",      # 透過度60%の黒帯背景
+                            font=dict(size=14, color='#FFFFFF'),
+                            bgcolor="rgba(0, 0, 0, 0.6)",
                             bordercolor="rgba(0, 0, 0, 0)",
                             borderpad=2
                         )
@@ -262,7 +259,14 @@ if uploaded_fixed and uploaded_demo:
             hovermode='closest',
             height=700,
             margin=dict(l=20, r=20, t=50, b=20),
-            legend=dict(font=dict(color='white')) # 参加者名（凡例）の文字色を白に
+            legend=dict(font=dict(color='white')),
+            # ★追加: ホバー（マウスオーバー）時のツールチップ表示を高コントラスト化（黒背景に白文字、サイズ14）
+            hoverlabel=dict(
+                bgcolor="rgba(0, 0, 0, 0.9)",
+                font_size=14,
+                font_color="#FFFFFF",
+                bordercolor="gray"
+            )
         )
         
         st.plotly_chart(fig, use_container_width=True)
